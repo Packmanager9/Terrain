@@ -400,16 +400,19 @@ window.addEventListener('DOMContentLoaded', (event) => {
             }
             return false
         }
-    } class Polygon {
+    } 
+    
+    class Polygon {
         constructor(x, y, size, color, sides = 3, xmom = 0, ymom = 0, angle = 0, reflect = 0) {
             if (sides < 2) {
                 sides = 2
             }
+            this.dot = new Circle(x,y, size/6, "brown")
             this.reflect = reflect
             this.xmom = xmom
             this.ymom = ymom
             this.body = new Circle(x, y, size - (size * .293), "transparent")
-            this.bigbody = new Circle(x, y, (size - (size * .293))*5.5, "transparent")
+            this.bigbody = new Circle(x, y, (size - (size * .293))*8.9, "transparent")
             this.smallbody = new Circle(x, y, (size - (size * .293))*3.5, "transparent")
             this.nodes = []
             this.angle = angle
@@ -423,15 +426,166 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 this.angle += this.angleIncrement
             }
 
-            this.farmvalue = (Math.random()*19)+5.1
+            this.farmvalue = (Math.random()*19)+5
+            this.pollution = 0
             this.minerals = (Math.random()*19)+5
+            this.population = 0
+            if(Math.random()<.009){
+                this.minerals+=worldflood*2
+                // this.farmvalue-=worldflood*3
+            }
+            if(Math.random()<.05){
+                this.farmvalue+=worldflood/20
+            }
+            if(Math.random()<.001){
+                this.farmvalue+=worldflood*2
+            }
+            this.color = `rgb(${this.minerals*5},${this.farmvalue*10}, ${this.minerals*5})`
+            this.colorsto = `rgb(${this.minerals*5},${this.farmvalue*10}, ${this.minerals*5})`
+            this.strokecolor = `rgb(${this.minerals*5},${this.farmvalue*10}, ${this.minerals*5})`
+
+            this.info = {}
+            this.info.Farmability = this.farmvalue*10
+            this.info.Moisture = this.minerals*10
+        
+        }
+        isPointInside(point) { // rough approximation
+            this.body.radius = this.size - (this.size * .00293)
+            if (this.sides <= 2) {
+                return false
+            }
+            this.areaY = point.y - this.body.y
+            this.areaX = point.x - this.body.x
+            if (((this.areaX * this.areaX) + (this.areaY * this.areaY)) <= (this.body.radius * this.body.radius)) {
+                return true
+            }
+            return false
+        }
+        move() {
+            if (this.reflect == 1) {
+                if (this.body.x > canvas.width) {
+                    if (this.xmom > 0) {
+                        this.xmom *= -1
+                    }
+                }
+                if (this.body.y > canvas.height) {
+                    if (this.ymom > 0) {
+                        this.ymom *= -1
+                    }
+                }
+                if (this.body.x < 0) {
+                    if (this.xmom < 0) {
+                        this.xmom *= -1
+                    }
+                }
+                if (this.body.y < 0) {
+                    if (this.ymom < 0) {
+                        this.ymom *= -1
+                    }
+                }
+            }
+            this.body.x += this.xmom
+            this.body.y += this.ymom
+        }
+        draw() {
+            this.info.Farmability = this.farmvalue*10
+            this.info.Moisture = this.minerals*10
+            this.info.Inhabited = this.population
+            this.info.Pollution = this.pollution
+            if(this.info.Farmability < this.info.Moisture){
+                if(this.population == 0){
+                    this.info.Farmability = 0
+                }
+            }
+            if(this.info.Farmability > this.info.Moisture){
+                this.info.Moisture *= .7
+            }
+            this.nodes = []
+            this.angleIncrement = (Math.PI * 2) / this.sides
+            this.body.radius = this.size - (this.size * .293)
+            for (let t = 0; t < this.sides; t++) {
+                let node = new Circle(this.body.x + (this.size * (Math.cos(this.angle))), this.body.y + (this.size * (Math.sin(this.angle))), 0, "transparent")
+                this.nodes.push(node)
+                this.angle += this.angleIncrement
+            }
+            map_context.strokeStyle = this.color
+            map_context.fillStyle = this.color
+            map_context.lineWidth = 0
+            map_context.beginPath()
+            map_context.moveTo(this.nodes[0].x, this.nodes[0].y)
+            for (let t = 1; t < this.nodes.length; t++) {
+                map_context.lineTo(this.nodes[t].x, this.nodes[t].y)
+            }
+            map_context.lineTo(this.nodes[0].x, this.nodes[0].y)
+            map_context.stroke()
+            map_context.fill()
+            if(this.strokecolor == "red"){
+                map_context.strokeWidth = .5
+            }else{
+                map_context.strokeWidth = 1
+            }
+            map_context.strokeStyle = this.strokecolor
+            map_context.stroke()
+            map_context.closePath()
+            if(this.population > 0){
+                map_context.lineWidth = this.dot.strokeWidth
+                map_context.strokeStyle = this.dot.color
+                map_context.beginPath();
+                if (this.dot.radius > 0) {
+                    map_context.arc(this.dot.x, this.dot.y, this.dot.radius, 0, (Math.PI * 2), true)
+                    map_context.fillStyle = this.dot.color
+                    map_context.fill()
+                    map_context.stroke();
+                } 
+                let growth = this.farmvalue
+                let drop = this.farmvalue*.001
+                this.population+=growth
+                this.pollution+=drop
+                this.farmvalue*=.9999
+            }
+        }
+    }
+    class Polygonlocal {
+        constructor(x, y, size, color, sides = 3, xmom = 0, ymom = 0, angle = 0, reflect = 0) {
+            if (sides < 2) {
+                sides = 2
+            }
+            this.reflect = reflect
+            this.xmom = xmom
+            this.ymom = ymom
+            this.body = new Circle(x, y, size - (size * .293), "transparent")
+            this.bigbody = new Circle(x, y, (size - (size * .293))*8.9, "transparent")
+            this.smallbody = new Circle(x, y, (size - (size * .293))*3.5, "transparent")
+            this.nodes = []
+            this.angle = angle
+            this.size = size
+            this.color = color
+            this.angleIncrement = (Math.PI * 2) / sides
+            this.sides = sides
+            for (let t = 0; t < sides; t++) {
+                let node = new Circle(this.body.x + (this.size * (Math.cos(this.angle))), this.body.y + (this.size * (Math.sin(this.angle))), 0, "transparent")
+                this.nodes.push(node)
+                this.angle += this.angleIncrement
+            }
+
+            this.farmvalue = (Math.random()*19)+5
+            this.minerals = (Math.random()*19)+5
+            if(Math.random()<.009){
+                this.minerals+=worldflood*3
+            }
+            if(Math.random()<.05){
+                this.farmvalue+=worldflood/20
+            }
+            if(Math.random()<.001){
+                this.farmvalue+=worldflood*2
+            }
             this.color = `rgb(${this.minerals*5},${this.farmvalue*10}, ${this.minerals*5})`
             this.colorsto = `rgb(${this.minerals*5},${this.farmvalue*10}, ${this.minerals*5})`
             this.strokecolor = `rgb(${this.minerals*5},${this.farmvalue*10}, ${this.minerals*5})`
 
         }
         isPointInside(point) { // rough approximation
-            this.body.radius = this.size - (this.size * .293)
+            this.body.radius = this.size + (this.size * 1.3293)
             if (this.sides <= 2) {
                 return false
             }
@@ -781,17 +935,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
     function setUp(canvas_pass, style = "#000000") {
         canvas = canvas_pass
         canvas_context = canvas.getContext('2d');
+        map_context = map_canvas.getContext('2d');
         canvas.style.background = style
         window.setInterval(function () {
             main()
-        }, 1700)
+        }, 17)
         document.addEventListener('keydown', (event) => {
             keysPressed[event.key] = true;
         });
         document.addEventListener('keyup', (event) => {
             delete keysPressed[event.key];
         });
-        window.addEventListener('pointerdown', e => {
+        canvas.addEventListener('pointerdown', e => {
             FLEX_engine = canvas.getBoundingClientRect();
             XS_engine = e.clientX - FLEX_engine.left;
             YS_engine = e.clientY - FLEX_engine.top;
@@ -802,7 +957,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
             for(let t = 0;t<grid.blocks.length;t++){
                 if(grid.blocks[t].isPointInside(TIP_engine)){
+                    selected.strokecolor = selected.color
+                    selected.draw()
+                    selected.draw()
+                    selected.draw()
                     selected = grid.blocks[t]
+                    break
                 }
             }
 
@@ -903,6 +1063,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     }
 
     let setup_canvas = document.getElementById('canvas') //getting canvas from document
+    let map_canvas = document.getElementById('map') //getting canvas from document
 
     setUp(setup_canvas) // setting up canvas refrences, starting timer. 
 
@@ -915,7 +1076,7 @@ class HexGrid{
         for (let t = 0; t < canvas.width+1; t += Math.floor(size*1.6)) {
             // this.holdblocks = []
             let y = 0
-            for (let k = 0; k < canvas.height+1; k += Math.floor(size*1.6)) {
+            for (let k = 0; k <900; k += Math.floor(size*1.6)) {
                 if(y%2==0){
                     const rect = new Polygon(k, t, size, "white", 6)
                     // rect.draw()
@@ -990,30 +1151,59 @@ class HexGrid{
             this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *5},${this.blocks[t].farmvalue *10}, ${this.blocks[t].minerals *.5})`
             this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *5},${this.blocks[t].farmvalue *10}, ${this.blocks[t].minerals *.5})`
         }else if(Math.abs(this.blocks[t].farmvalue - this.blocks[t].minerals) <= 1){
-            this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.8},${this.blocks[t].farmvalue *9}, ${this.blocks[t].minerals *6.5})`
-            this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.8},${this.blocks[t].farmvalue *9}, ${this.blocks[t].minerals *6.5})`
-            this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.8},${this.blocks[t].farmvalue *9}, ${this.blocks[t].minerals *6.5})`
+            this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.8},${this.blocks[t].farmvalue *7}, ${this.blocks[t].minerals *7.5})`
+            this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.8},${this.blocks[t].farmvalue *7}, ${this.blocks[t].minerals *7.5})`
+            this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.8},${this.blocks[t].farmvalue *7}, ${this.blocks[t].minerals *7.5})`
         }else if(Math.abs(this.blocks[t].farmvalue - this.blocks[t].minerals) <= 2){
-            this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.6},${this.blocks[t].farmvalue *8}, ${this.blocks[t].minerals *7.5})`
-            this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.6},${this.blocks[t].farmvalue *8}, ${this.blocks[t].minerals *7.5})`
-            this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.6},${this.blocks[t].farmvalue *8}, ${this.blocks[t].minerals *7.5})`
+            this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.6},${this.blocks[t].farmvalue *6}, ${this.blocks[t].minerals *8.5})`
+            this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.6},${this.blocks[t].farmvalue *6}, ${this.blocks[t].minerals *8.5})`
+            this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.6},${this.blocks[t].farmvalue *6}, ${this.blocks[t].minerals *8.5})`
         }else if(Math.abs(this.blocks[t].farmvalue - this.blocks[t].minerals) <= 3){
-            this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.4},${this.blocks[t].farmvalue *6}, ${this.blocks[t].minerals *8.5})`
-            this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.4},${this.blocks[t].farmvalue *6}, ${this.blocks[t].minerals *8.5})`
-            this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.4},${this.blocks[t].farmvalue *6}, ${this.blocks[t].minerals *8.5})`
+            this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.4},${this.blocks[t].farmvalue *4}, ${this.blocks[t].minerals *9.3})`
+            this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.4},${this.blocks[t].farmvalue *4}, ${this.blocks[t].minerals *9.3})`
+            this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.4},${this.blocks[t].farmvalue *4}, ${this.blocks[t].minerals *9.3})`
         }else if(Math.abs(this.blocks[t].farmvalue - this.blocks[t].minerals) <= 4){
-            this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.2},${this.blocks[t].farmvalue *5}, ${this.blocks[t].minerals *9.5})`
-            this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.2},${this.blocks[t].farmvalue *5}, ${this.blocks[t].minerals *9.5})`
-            this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.2},${this.blocks[t].farmvalue *5}, ${this.blocks[t].minerals *9.5})`
+            this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.2},${this.blocks[t].farmvalue *3}, ${this.blocks[t].minerals *9.5})`
+            this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.2},${this.blocks[t].farmvalue *3}, ${this.blocks[t].minerals *9.5})`
+            this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.2},${this.blocks[t].farmvalue *3}, ${this.blocks[t].minerals *9.5})`
         }else{
-            this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.0},${this.blocks[t].farmvalue *4}, ${this.blocks[t].minerals *10})`
-            this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.0},${this.blocks[t].farmvalue *4}, ${this.blocks[t].minerals *10})`
-            this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.0},${this.blocks[t].farmvalue *4}, ${this.blocks[t].minerals *10})`
+            this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.0},${this.blocks[t].farmvalue *2}, ${this.blocks[t].minerals *10})`
+            this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.0},${this.blocks[t].farmvalue *2}, ${this.blocks[t].minerals *10})`
+            this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.0},${this.blocks[t].farmvalue *2}, ${this.blocks[t].minerals *10})`
         }
         }
 
     }
     draw() {
+
+        for (let t = 0; t < this.blocks.length; t++) {
+            // this.blocks[t].minerals += .5
+            if(this.blocks[t].farmvalue > this.blocks[t].minerals){
+                this.blocks[t].color = `rgb(${this.blocks[t].minerals *5},${this.blocks[t].farmvalue *10}, ${this.blocks[t].minerals *.5})`
+                this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *5},${this.blocks[t].farmvalue *10}, ${this.blocks[t].minerals *.5})`
+                this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *5},${this.blocks[t].farmvalue *10}, ${this.blocks[t].minerals *.5})`
+            }else if(Math.abs(this.blocks[t].farmvalue - this.blocks[t].minerals) <= 1){
+                this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.8},${this.blocks[t].farmvalue *9}, ${this.blocks[t].minerals *6.5})`
+                this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.8},${this.blocks[t].farmvalue *9}, ${this.blocks[t].minerals *6.5})`
+                this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.8},${this.blocks[t].farmvalue *9}, ${this.blocks[t].minerals *6.5})`
+            }else if(Math.abs(this.blocks[t].farmvalue - this.blocks[t].minerals) <= 2){
+                this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.6},${this.blocks[t].farmvalue *8}, ${this.blocks[t].minerals *7.5})`
+                this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.6},${this.blocks[t].farmvalue *8}, ${this.blocks[t].minerals *7.5})`
+                this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.6},${this.blocks[t].farmvalue *8}, ${this.blocks[t].minerals *7.5})`
+            }else if(Math.abs(this.blocks[t].farmvalue - this.blocks[t].minerals) <= 3){
+                this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.4},${this.blocks[t].farmvalue *6}, ${this.blocks[t].minerals *8.5})`
+                this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.4},${this.blocks[t].farmvalue *6}, ${this.blocks[t].minerals *8.5})`
+                this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.4},${this.blocks[t].farmvalue *6}, ${this.blocks[t].minerals *8.5})`
+            }else if(Math.abs(this.blocks[t].farmvalue - this.blocks[t].minerals) <= 4){
+                this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.2},${this.blocks[t].farmvalue *5}, ${this.blocks[t].minerals *9.5})`
+                this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.2},${this.blocks[t].farmvalue *5}, ${this.blocks[t].minerals *9.5})`
+                this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.2},${this.blocks[t].farmvalue *5}, ${this.blocks[t].minerals *9.5})`
+            }else{
+                this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.0},${this.blocks[t].farmvalue *4}, ${this.blocks[t].minerals *10})`
+                this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.0},${this.blocks[t].farmvalue *4}, ${this.blocks[t].minerals *10})`
+                this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *1.0},${this.blocks[t].farmvalue *4}, ${this.blocks[t].minerals *10})`
+            }
+            }
         for (let t = 0; t < this.blocks.length; t++) {
             // for (let k = 0; k < this.blocks[t].length; k++) { 
                 if(this.blocks[t] == selected){
@@ -1028,19 +1218,80 @@ class HexGrid{
     }
 }
 
+class UI{
+    constructor(){
+        this.box = new Rectangle(900, 0, 380, 900, "gray")
+        this.info = Object.keys(selected.info)
+    }
+    draw(){
+        this.info = Object.keys(selected.info)
+        this.box.draw()
+        let x = 940
+        let y = 40
+        canvas_context.fillStyle =  "black"
+        canvas_context.font =  "20px arial"
+        for(let t = 0;t<this.info.length;t++){
+            canvas_context.fillText(`${this.info[t]} : ${Math.round(selected.info[this.info[t]])}`, x,y)
+            y+=40
+        }
+
+    }
+}
+
+class Society{
+    constructor(){
+        this.cities = []
+    }
+    draw(){
+        for(let t = 0;t<this.cities.length;t++){
+            for(let k = 0;k<this.cities.length;k++){
+                if(t!=k){
+                    if(this.cities[t].smallbody.doesPerimeterTouch(this.cities[k].smallbody)){
+                        let link = new LineOP(this.cities[k].dot, this.cities[t].dot)
+                        link.draw()
+                    }
+                }
+            }
+        }
+        for(let t = 0;t<this.cities.length-1;t++){
+            let link = new LineOP(this.cities[t].dot, this.cities[t+1].dot)
+            link.draw()
+        }
+    }
+
+}
+
 
 let selected = {}
+let society = new Society()
+selected.info = {}
+let ui = new UI()
+let worldflood = 50
 function duura(){
 }
 selected.draw = duura
-let grid = new HexGrid(10)
+let grid = new HexGrid(12)
+grid.draw()
+
+// canvas_context.scale(2,2)
 
     function main() {
         canvas_context.clearRect(0, 0, canvas.width, canvas.height)  // refreshes the image
         gamepadAPI.update() //checks for button presses/stick movement on the connected controller)
         // game code goes here
-        grid.draw()
+        canvas_context.drawImage(map_canvas, 0,0)
+        selected.strokecolor = "red"
         selected.draw() 
-        grid = new HexGrid(10)
+        // grid = new HexGrid(6)
+        ui.draw()
+        society.draw()
+        if(keysPressed[' ']){
+            if(selected.population == 0){
+                selected.population = 100
+                if(!society.cities.includes(selected)){
+                    society.cities.push(selected)
+                }
+            }
+        }
     }
 })
