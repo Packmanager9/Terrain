@@ -411,7 +411,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
             this.reflect = reflect
             this.xmom = xmom
             this.ymom = ymom
-            this.body = new Circle(x, y, size - (size * .293), "transparent")
+            this.body = new Circle(x, y, size + (size * .193), "transparent")
             this.bigbody = new Circle(x, y, (size - (size * .293))*8.9, "transparent")
             this.smallbody = new Circle(x, y, (size - (size * .293))*3.5, "transparent")
             this.nodes = []
@@ -1145,11 +1145,14 @@ class HexGrid{
         this.blocks[t].avgr.m /=  this.blocks[t].avgr.c
         this.blocks[t].avgr.f /=  this.blocks[t].avgr.c
         this.blocks[t].farmvalue =  this.blocks[t].avgr.f
+        this.blocks[t].farmvaluex =  this.blocks[t].avgr.f
         this.blocks[t].minerals =  this.blocks[t].avgr.m
+        this.blocks[t].wet =  1
         if(this.blocks[t].farmvalue > this.blocks[t].minerals){
             this.blocks[t].color = `rgb(${this.blocks[t].minerals *5},${this.blocks[t].farmvalue *10}, ${this.blocks[t].minerals *.5})`
             this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *5},${this.blocks[t].farmvalue *10}, ${this.blocks[t].minerals *.5})`
             this.blocks[t].strokecolor = `rgb(${this.blocks[t].minerals *5},${this.blocks[t].farmvalue *10}, ${this.blocks[t].minerals *.5})`
+            this.blocks[t].wet =  0
         }else if(Math.abs(this.blocks[t].farmvalue - this.blocks[t].minerals) <= 1){
             this.blocks[t].color = `rgb(${this.blocks[t].minerals *1.8},${this.blocks[t].farmvalue *7}, ${this.blocks[t].minerals *7.5})`
             this.blocks[t].colorsto = `rgb(${this.blocks[t].minerals *1.8},${this.blocks[t].farmvalue *7}, ${this.blocks[t].minerals *7.5})`
@@ -1241,21 +1244,12 @@ class UI{
 class Society{
     constructor(){
         this.cities = []
+        this.roads = []
     }
     draw(){
-        for(let t = 0;t<this.cities.length;t++){
-            for(let k = 0;k<this.cities.length;k++){
-                if(t!=k){
-                    if(this.cities[t].smallbody.doesPerimeterTouch(this.cities[k].smallbody)){
-                        let link = new LineOP(this.cities[k].dot, this.cities[t].dot)
-                        link.draw()
-                    }
-                }
-            }
-        }
-        for(let t = 0;t<this.cities.length-1;t++){
-            let link = new LineOP(this.cities[t].dot, this.cities[t+1].dot)
-            link.draw()
+       
+        for(let t = 0;t<this.roads.length;t++){
+            this.roads[t].draw()
         }
     }
 
@@ -1286,12 +1280,64 @@ grid.draw()
         ui.draw()
         society.draw()
         if(keysPressed[' ']){
+            if((selected.farmvaluex - selected.minerals) >= 0){
             if(selected.population == 0){
                 selected.population = 100
                 if(!society.cities.includes(selected)){
                     society.cities.push(selected)
+
+                    society.roads = []
+                    for(let t = 0;t<society.cities.length;t++){
+                        for(let k = 0;k<society.cities.length;k++){
+                            if(t!=k){
+                                if(society.cities[t].smallbody.doesPerimeterTouch(society.cities[k].smallbody)){
+                                    let wet = 0
+                                    let link = new LineOP(society.cities[k].dot, society.cities[t].dot)
+                                    let ball = new Circle(society.cities[t].body.x, society.cities[t].body.y, 1, "transparent", (society.cities[k].body.x-society.cities[t].body.x)/100,  (society.cities[k].body.y-society.cities[t].body.y)/100)
+                                    while(!society.cities[k].body.isPointInside(ball)){
+                                        ball.move()
+                                        for(let g = 0;g<grid.blocks.length;g++){
+                                            if(grid.blocks[g].body.isPointInside(ball)){
+                                                    if((grid.blocks[g].wet) == 1 ){
+                                                        wet = 1
+                                                    }
+                                            }
+                                        }
+                                    }
+                                    if(wet!=1){
+                                        society.roads.push(link)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    for(let t = 0;t<society.cities.length-1;t++){
+                        
+            
+                        // if(society.cities[t].smallbody.doesPerimeterTouch(society.cities[t+1].smallbody)){
+                            let wet = 0
+                            let link = new LineOP(society.cities[t].dot, society.cities[t+1].dot)
+                            let ball = new Circle(society.cities[t].body.x, society.cities[t].body.y, 1, "transparent", (society.cities[t+1].body.x-society.cities[t].body.x)/100,  (society.cities[t+1].body.y-society.cities[t].body.y)/100)
+                            while(!society.cities[t+1].body.isPointInside(ball)){
+                                ball.move()
+                                for(let g = 0;g<grid.blocks.length;g++){
+                                    if(grid.blocks[g].body.isPointInside(ball)){
+                                            if((grid.blocks[g].wet == 1) ){
+                                                wet = 1
+                                            }
+                                    }
+                                }
+                            }
+                            if(wet!=1){
+                                society.roads.push(link)
+                            }
+                        // }
+            
+            
+                    }
                 }
             }
         }
+    }
     }
 })
