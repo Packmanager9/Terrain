@@ -447,7 +447,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
             this.info = {}
             this.info.Farmability = this.farmvalue*10
             this.info.Moisture = this.minerals*10
-        
+            // this.info.Region = 'a'
+        }
+        name(){
+            RegionNamer(this)
         }
         isPointInside(point) { // rough approximation
             this.body.radius = this.size - (this.size * .00293)
@@ -500,6 +503,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
             if(this.info.Farmability > this.info.Moisture){
                 this.info.Moisture *= .7
             }
+            this.info.Region = this.name
             this.nodes = []
             this.angleIncrement = (Math.PI * 2) / this.sides
             this.body.radius = this.size - (this.size * .293)
@@ -1181,6 +1185,9 @@ class HexGrid{
         }
         }
 
+        for (let t = 0; t < this.blocks.length; t++) {
+            this.blocks[t].name()
+        }
     }
     draw() {
 
@@ -1239,7 +1246,11 @@ class UI{
         canvas_context.fillStyle =  "black"
         canvas_context.font =  "20px arial"
         for(let t = 0;t<this.info.length;t++){
-            canvas_context.fillText(`${this.info[t]} : ${Math.round(selected.info[this.info[t]])}`, x,y)
+            if(typeof selected.info[this.info[t]] == "number"){
+                canvas_context.fillText(`${this.info[t]} : ${Math.round(selected.info[this.info[t]])}`, x,y)
+            }else{
+                canvas_context.fillText(`${this.info[t]} : ${(selected.info[this.info[t]])}`, x,y)
+            }
             y+=40
         }
 
@@ -1413,5 +1424,80 @@ let teamnum = 0
     canvas_context.fillStyle = kingdoms[teamnum].color
     canvas_context.fillRect(950, 600, 50,50)
 // }
+    }
+
+    function RegionNamer(region){
+
+        let vowels = 'aeiouy'.split('')
+        let consonants = 'bcdfghjklmnpqrstvwxz'.split('')
+        region.name = ''
+
+        let namelength = (Math.random()*6)+2
+        for(let t = 0;t<namelength;t++){
+            if(Math.random()<.6){
+                region.name+=vowels[Math.floor(Math.random()*vowels.length)]
+            }else{
+                region.name+=consonants[Math.floor(Math.random()*consonants.length)]
+            }
+            if(t == 0){
+                region.name = region.name.toUpperCase()
+            }
+        }
+
+
+        if(region.farmvalue > region.minerals){
+            if(Math.random()<.1){
+                region.name += ' County'
+            }else if(Math.random()<.1){
+                region.name += ' Valley'
+            }else if(Math.random()<.11){
+                region.name += ' Foothills'
+            }else if(Math.random()<.13){
+                region.name += ' Plateau'
+            }else if(Math.random()<.16){
+                region.name += ' Forest'
+            }else if(Math.random()<.2){
+                region.name += ' Jungle'
+            }else if(Math.random()<.24){
+                region.name += ' Tundra'
+            }else if(Math.random()<.3){
+                region.name += ' Marsh'
+            }else if(Math.random()<.36){
+                region.name += ' Swamp'
+            }else{        
+            if(Math.random()<.1){
+                region.name += ' County'
+            }else if(Math.random()<.1){
+                region.name += ' Valley'
+            }else if(Math.random()<.11){
+                region.name += ' Foothills'
+            }else if(Math.random()<.13){
+                region.name += ' Plateau'
+            }else if(Math.random()<.16){
+                region.name += ' Forest'
+            }else if(Math.random()<.2){
+                region.name += ' Jungle'
+            }else if(Math.random()<.24){
+                region.name += ' Tundra'
+            }else if(Math.random()<.3){
+                region.name += ' Marsh'
+            }else if(Math.random()<.36){
+                region.name += ' Swamp'
+            }else{
+                region.name += ' Plain'
+            }
+            }
+            
+        }else if(Math.abs(region.farmvalue - region.minerals) <= 1){
+            region.name += ' Coastal Sea'
+        }else if(Math.abs(region.farmvalue - region.minerals) <= 2){
+            region.name += ' Deep Sea'
+        }else if(Math.abs(region.farmvalue - region.minerals) <= 3){
+            region.name += ' Ocean'
+        }else if(Math.abs(region.farmvalue - region.minerals) <= 4){
+            region.name += ' Open Water'
+        }else{
+            region.name += ' Depths'
+        }
     }
 })
